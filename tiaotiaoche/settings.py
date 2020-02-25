@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+from datetime import timedelta
+
+import djcelery
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -42,6 +46,12 @@ INSTALLED_APPS = [
     'django_filters',
     'common',
     'api',
+    'django.contrib.sites',
+    'django.contrib.sitemaps',
+    'accounts',
+    'compressor',
+    'servermanager',
+    'djcelery'
 ]
 
 MIDDLEWARE = [
@@ -60,7 +70,7 @@ ROOT_URLCONF = 'tiaotiaoche.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -292,3 +302,75 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
 
 # # 防止点击劫持攻击手段（不允许使用<iframe>标签进行加载）
 # X_FRAME_OPTIONS = 'DENY'
+
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    # other
+    'compressor.finders.CompressorFinder',
+)
+
+COMPRESS_ENABLED = True
+
+COMPRESS_CSS_FILTERS = [
+    # creates absolute urls from relative ones
+    'compressor.filters.css_default.CssAbsoluteFilter',
+    # css minimizer
+    'compressor.filters.cssmin.CSSMinFilter'
+]
+COMPRESS_JS_FILTERS = [
+    'compressor.filters.jsmin.JSMinFilter'
+]
+
+
+TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+DATE_TIME_FORMAT = '%Y-%m-%d'
+
+AUTH_USER_MODEL = 'accounts.DocumentUser'
+LOGIN_URL = '/login/'
+
+
+# 邮件配置
+EMAIL_USE_SSL = True
+
+EMAIL_HOST = 'smtp.qq.com'  # 如果是 163 改成 smtp.163.com
+
+EMAIL_PORT = 465
+
+EMAIL_HOST_USER = EMAIL_SENDER  # 帐号
+
+EMAIL_HOST_PASSWORD = EMAIL_PWD  # 授权码（****）
+# 默认邮件
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# 如下配置celery等信息
+
+# 当settings.py中的djcelery.setup_loader()运行时,
+# Celery便会查看所有INSTALLED_APPS中app目录中的tasks.py文件, 找到标记为task的function,
+# 并将它们注册为celery task.
+
+# 加载djcelery
+djcelery.setup_loader()
+
+# 并没有北京时区，与下面TIME_ZONE应该一致
+CELERY_TIMEZONE = 'Asia/Shanghai'
+# 消息队列
+BROKER_URL = 'redis://127.0.0.1:6379/0'
+# 配置backend
+# CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+CELERY_TASK_RESULT_EXPIRES = 60 * 60 * 24
+# 设置worker的并发数量为2
+CELERY_CONCURRENCY = 2
+# 结果存储位置
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+# 任务序列化和反序列化为json
+CELERY_TASK_SERIALIZER = 'json'
+# 存储结果序列化为json
+CELERY_RESULT_SERIALIZER = 'json'
+# 邮件配置
+CELERYBEAT_SCHEDULE = {
+    'send_mail': {
+        'task': 'accounts.tasks.send_email_to_zhake',
+        'schedule': timedelta(seconds=10),
+    }
+}

@@ -1,0 +1,153 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>租房网 - 首页</title>
+		<link rel="stylesheet" href="../css/style.css">
+        <link rel="stylesheet" href="../css/head.css">
+	</head>
+	<body>
+        <div id="header" class="wrap">
+			<div id="logo">
+				<img src="../images/logo.png" width="160" height="40">
+			</div>
+			<div id="headbar">
+				<a href="login.html">用户登录</a>
+				<a href="register.html">快速注册</a>
+				<div class="pub">
+					<a href="publish.html">发布房源</a>
+				</div>
+			</div>
+		</div>
+        <div id="navbar" class="wrap">
+			<form>
+				<div id="app2" class="search clearfix">
+					<div class="fl">
+						<ul>
+							<li class="bold">房屋信息</li>
+							<li>标题：
+								<input type="text" class="text">
+								<label class="ui-blue">
+								<input type="submit" name="search" value="搜索房屋">
+							</label>
+							</li>
+						</ul>
+					</div>
+					<div class="fl">
+						<ul>
+							<li class="first">价格</li>
+							<li>
+								<select v-model="price">
+									<option value='0-999999999'>不限</option>
+									<option value='0-1000'>1000元以下</option>
+									<option value='1000-2000'>1000元-2000元</option>
+									<option value='2000-3000'>2000元—3000元</option>
+									<option value='3000-5000'>3000元—5000元</option>
+									<option value='5000-10000'>5000元—10000元</option>
+									<option value='10000-20000'>10000元—20000元</option>
+									<option value='20000-50000'>20000元—50000元</option>
+									<option value='50000-999999999'>50000元以上</option>
+								</select>
+							</li>
+						</ul>
+					</div>
+					<div class="fl">
+						<ul>
+							<li class="first">房屋位置</li>
+							<li>
+								省
+								<select>
+									<option value="0">请选择</option>
+								</select>
+								市
+								<select>
+									<option value="0">请选择</option>
+								</select>
+								区
+								<select>
+									<option value="0">请选择</option>
+								</select>
+							</li>
+						</ul>
+					</div>
+					<div class="fl">
+						<ul>
+							<li class="first">房型</li>
+							<li>
+								<select>
+									<option value="0">不限</option>
+								</select>
+							</li>
+						</ul>
+					</div>
+					<div class="fl">
+						<ul>
+							<li class="first">面积</li>
+							<li>
+								<select>
+									<option value="0-99999999">不限</option>
+									<option value="0-50">50平米以下</option>
+									<option value="50-100">50-100平米</option>
+									<option value="100-200">100-200平米</option>
+									<option value="200-99999999">200平米以上</option>
+								</select>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</form>
+		</div>
+		<div id="app1" class="main wrap">
+			<table class="car-list">
+				<tr>
+					<td class="car-thumb">
+						<div>
+							<img src="" width="160" height="120" alt="">
+							<span class="count">图</span>
+						</div>
+					</td>
+					<td>
+						<dl>
+							<dt>
+								<a href="">{{ car.title }}</a>
+							</dt>
+							<dd>
+								{{ car.district.name }}&nbsp;{{ car.street }}&nbsp;
+								{{ car.area }}平米&nbsp;{{ car.floor }}层/{{ car.totalfloor }}层 <br>
+							</dd>
+							<dd>
+								<span class="car-tag">{{ tag.content }}</span>
+							</dd>
+						</dl>
+					</td>
+					<td class="car-type">{{ car.type.name }}</td>
+					<td class="car-price"><span>{{ car.price }}</span>{{ car.priceunit }}</td>
+				</tr>
+			</table>
+			<div class="pager">
+				<ul>
+					<li class="current">
+						<a href="">首页</a>
+					</li>
+					<li>
+						<a href="">上一页</a></li>
+					<li>
+						<a href="">下一页</a>
+					</li>
+					<li>
+						<a href="">末页</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+        <div id="footer" class="wrap">
+			<dl>
+				<dt>&copy; 北京千锋互联科技有限公司 版权所有</dt>
+				<dd>京ICP备12003911号-3 京公网安备11010802011455号</dd>
+				<dd>关于千锋 · 联系我们 · 意见反馈 · 帮助中心</dd>
+			</dl>
+		</div>
+		<script src="https://cdn.bootcss.com/vue/2.6.10/vue.min.js"></script>
+		<script></script>
+	</body>
+</html>
