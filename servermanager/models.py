@@ -3,6 +3,8 @@ from django.db import models
 # Create your models here.
 
 class EmailSendLog(models.Model):
+    """邮件日志类"""
+
     emailto = models.CharField('收件人', max_length=300)
     title = models.CharField('邮件标题', max_length=2000)
     content = models.TextField('邮件内容')

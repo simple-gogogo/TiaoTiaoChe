@@ -1,15 +1,13 @@
 import time
 
 import django
-django.setup()
-
-#调度任务
 from celery import shared_task
 from celery.task import periodic_task
 
 from tiaotiaoche.celery import app
 from utils import send_email
 
+django.setup()
 
 @app.task
 def add(x, y):
@@ -18,8 +16,6 @@ def add(x, y):
     time.sleep(10)
     print('============耗时操作结束============')
     return x + y
-
-
 
 @shared_task
 def send_email_to_zhake():

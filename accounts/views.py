@@ -76,7 +76,6 @@ class LoginView(FormView):
 def account_result(request):
     type = request.GET.get('type')
     id = request.GET.get('id')
-
     user = get_object_or_404(get_user_model(), id=id)
     logger.info(type)
     if user.is_active:

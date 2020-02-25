@@ -5,6 +5,8 @@ from django.core.exceptions import ValidationError
 
 
 class LoginForm(AuthenticationForm):
+    """登录表单类"""
+
     def __init__(self, *args, **kwargs):
         super(LoginForm, self).__init__(*args, **kwargs)
         self.fields['username'].widget = widgets.TextInput(attrs={'placeholder': "username", "class": "form-control"})
@@ -21,6 +23,8 @@ class LoginForm(AuthenticationForm):
 
 
 class RegisterForm(UserCreationForm):
+    """注册表单类"""
+
     def __init__(self, *args, **kwargs):
         super(RegisterForm, self).__init__(*args, **kwargs)
 
