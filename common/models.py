@@ -87,17 +87,17 @@ class Agent(models.Model):
     # 经理人是否持有专业认证
     certificated = models.BooleanField(default=False)
     # 经理人负责的楼盘
-    estates = models.ManyToManyField(to='Estate', through='AgentEstate')
+    car_shops = models.ManyToManyField(to='car_shop', through='Agentcar_shop')
 
     class Meta:
         managed = False
         db_table = 'tb_agent'
 
 
-class Estate(models.Model):
+class car_shop(models.Model):
     """楼盘"""
     # 楼盘ID
-    estateid = models.AutoField(primary_key=True)
+    car_shopid = models.AutoField(primary_key=True)
     # 所属行政区域
     district = models.ForeignKey(to=District, on_delete=models.DO_NOTHING, db_column='distid')
     # 楼盘名称
@@ -109,24 +109,24 @@ class Estate(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'tb_estate'
+        db_table = 'tb_car_shop'
 
 
-class AgentEstate(models.Model):
+class Agentcar_shop(models.Model):
     """经理人楼盘中间实体"""
-    agent_estate_id = models.AutoField(primary_key=True)
+    agent_car_shop_id = models.AutoField(primary_key=True)
     # 经理人
     agent = models.ForeignKey(to=Agent, on_delete=models.DO_NOTHING, db_column='agentid')
     # 楼盘
-    estate = models.ForeignKey(to=Estate, on_delete=models.DO_NOTHING, db_column='estateid')
+    car_shop = models.ForeignKey(to=car_shop, on_delete=models.DO_NOTHING, db_column='car_shopid')
 
     class Meta:
         managed = False
-        db_table = 'tb_agent_estate'
-        unique_together = (('agent', 'estate'), )
+        db_table = 'tb_agent_car_shop'
+        unique_together = (('agent', 'car_shop'), )
 
 
-class HouseType(models.Model):
+class carType(models.Model):
     """户型"""
     # 户型ID
     typeid = models.IntegerField(primary_key=True)
@@ -135,13 +135,13 @@ class HouseType(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'tb_house_type'
+        db_table = 'tb_car_type'
 
 
-class HouseInfo(models.Model):
+class carInfo(models.Model):
     """房源信息"""
     # 房源ID
-    houseid = models.AutoField(primary_key=True)
+    carid = models.AutoField(primary_key=True)
     # 房源标题
     title = models.CharField(max_length=50)
     # 房源面积
@@ -171,7 +171,7 @@ class HouseInfo(models.Model):
     # 是否有中介费
     hasagentfees = models.BooleanField(default=False)
     # 房源户型
-    type = models.ForeignKey(to=HouseType, on_delete=models.DO_NOTHING, db_column='typeid')
+    type = models.ForeignKey(to=carType, on_delete=models.DO_NOTHING, db_column='typeid')
     # 房源发布者
     user = models.ForeignKey(to=User, on_delete=models.DO_NOTHING, db_column='userid')
     # 房源所属二级行政区域
@@ -179,29 +179,29 @@ class HouseInfo(models.Model):
     # 房源所属三级行政区域
     district_level3 = models.ForeignKey(to=District, on_delete=models.DO_NOTHING, related_name='+', db_column='distid3')
     # 房源所属楼盘
-    estate = models.ForeignKey(to=Estate, on_delete=models.DO_NOTHING, db_column='estateid', null=True)
+    car_shop = models.ForeignKey(to=car_shop, on_delete=models.DO_NOTHING, db_column='car_shopid', null=True)
     # 负责该房源的经理人
     agent = models.ForeignKey(to=Agent, on_delete=models.DO_NOTHING, db_column='agentid', null=True)
     # 房源标签
-    tags = models.ManyToManyField(to='Tag', through='HouseTag')
+    tags = models.ManyToManyField(to='Tag', through='carTag')
 
     class Meta:
         managed = False
-        db_table = 'tb_house_info'
+        db_table = 'tb_car_info'
 
 
-class HousePhoto(models.Model):
+class carPhoto(models.Model):
     """房源的图片"""
     # 图片ID
     photoid = models.AutoField(primary_key=True)
     # 图片对应的房源
-    house = models.ForeignKey(to=HouseInfo, on_delete=models.DO_NOTHING, db_column='houseid')
+    car = models.ForeignKey(to=carInfo, on_delete=models.DO_NOTHING, db_column='carid')
     # 图片资源路径
     path = models.CharField(max_length=255)
 
     class Meta:
         managed = False
-        db_table = 'tb_house_photo'
+        db_table = 'tb_car_photo'
 
 
 class Tag(models.Model):
@@ -216,18 +216,18 @@ class Tag(models.Model):
         db_table = 'tb_tag'
 
 
-class HouseTag(models.Model):
+class carTag(models.Model):
     """房源标签中间实体"""
-    house_tag_id = models.AutoField(primary_key=True)
+    car_tag_id = models.AutoField(primary_key=True)
     # 房源
-    house = models.ForeignKey(to=HouseInfo, on_delete=models.DO_NOTHING, db_column='houseid')
+    car = models.ForeignKey(to=carInfo, on_delete=models.DO_NOTHING, db_column='carid')
     # 标签
     tag = models.ForeignKey(to=Tag, on_delete=models.DO_NOTHING, db_column='tagid')
 
     class Meta:
         managed = False
-        db_table = 'tb_house_tag'
-        unique_together = (('house', 'tag'), )
+        db_table = 'tb_car_tag'
+        unique_together = (('car', 'tag'), )
 
 
 class Record(models.Model):
@@ -237,14 +237,14 @@ class Record(models.Model):
     # 浏览的用户
     user = models.ForeignKey(to=User, on_delete=models.DO_NOTHING, db_column='userid')
     # 浏览的房源
-    house = models.ForeignKey(to=HouseInfo, on_delete=models.DO_NOTHING, db_column='houseid')
+    car = models.ForeignKey(to=carInfo, on_delete=models.DO_NOTHING, db_column='carid')
     # 浏览日路日期
     recorddate = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = False
         db_table = 'tb_record'
-        unique_together = (('user', 'house'), )
+        unique_together = (('user', 'car'), )
 
 
 class LoginLog(models.Model):

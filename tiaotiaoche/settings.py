@@ -141,7 +141,7 @@ DEBUG_TOOLBAR_CONFIG = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'zufang',
+        'NAME': 'tiaotiaoche',
         'HOST': 'localhost',
         'PORT': 3306,
         'USER': 'root',

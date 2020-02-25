@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from api.views import get_provinces, get_district, HotCityView, \
-    AgentViewSet, HouseTypeViewSet, EstateViewSet, TagViewSet, HouseInfoViewSet
+    AgentViewSet, carTypeViewSet, car_shopViewSet, TagViewSet, carInfoViewSet
 
 urlpatterns = [
     path('districts/', get_provinces),
@@ -11,9 +11,9 @@ urlpatterns = [
 ]
 
 router = SimpleRouter()
-router.register('housetypes', HouseTypeViewSet)
-router.register('estates', EstateViewSet)
+router.register('cartypes', carTypeViewSet)
+router.register('car_shops', car_shopViewSet)
 router.register('agents', AgentViewSet)
 router.register('tags', TagViewSet)
-router.register('houseinfos', HouseInfoViewSet)
+router.register('carinfos', carInfoViewSet)
 urlpatterns += router.urls

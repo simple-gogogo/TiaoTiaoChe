@@ -2,7 +2,7 @@ from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination, CursorPagination
 from django_filters import filterset
 
-from common.models import Estate, HouseInfo
+from common.models import car_shop, carInfo
 
 
 class CustomPagePagination(PageNumberPagination):
@@ -18,7 +18,7 @@ class AgentCursorPagination(CursorPagination):
     ordering = '-agentid'
 
 
-class EstateFilterSet(filterset.FilterSet):
+class car_shopFilterSet(filterset.FilterSet):
     """自定义楼盘筛选器"""
     name = filterset.CharFilter(lookup_expr='startswith')
     minhot = filterset.NumberFilter(field_name='hot', lookup_expr='gte')
@@ -26,11 +26,11 @@ class EstateFilterSet(filterset.FilterSet):
     dist = filterset.NumberFilter(field_name='district')
 
     class Meta:
-        model = Estate
+        model = car_shop
         fields = ('name', 'minhot', 'maxhot', 'dist')
 
 
-class HouseInfoFilterSet(filterset.FilterSet):
+class carInfoFilterSet(filterset.FilterSet):
     """自定义房源筛选器"""
     title = filterset.CharFilter(lookup_expr='contains')
     minprice = filterset.NumberFilter(field_name='price', lookup_expr='gte')
@@ -45,5 +45,5 @@ class HouseInfoFilterSet(filterset.FilterSet):
                                Q(district_level3=value))
 
     class Meta:
-        model = HouseInfo
+        model = carInfo
         fields = ('title', 'minprice', 'maxprice', 'minarea', 'maxarea', 'type', 'district')

@@ -8,9 +8,9 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from api.helpers import EstateFilterSet, HouseInfoFilterSet
+from api.helpers import car_shopFilterSet, carInfoFilterSet
 from api.serializers import *
-from common.models import District, Agent, HouseType, Tag
+from common.models import District, Agent, carType, Tag
 
 
 @cache_page(timeout=365 * 86400)
@@ -78,8 +78,8 @@ class AgentViewSet(ModelViewSet):
             self.queryset = self.queryset.only('name', 'tel', 'servstar')
         else:
             self.queryset = self.queryset.prefetch_related(
-                Prefetch('estates',
-                         queryset=Estate.objects.all().only('name').order_by('-hot'))
+                Prefetch('car_shops',
+                         queryset=car_shop.objects.all().only('name').order_by('-hot'))
             )
         return self.queryset.order_by('-servstar')
 
@@ -92,10 +92,10 @@ class AgentViewSet(ModelViewSet):
 
 @method_decorator(decorator=cache_page(timeout=86400), name='list')
 @method_decorator(decorator=cache_page(timeout=86400), name='retrieve')
-class HouseTypeViewSet(ModelViewSet):
+class carTypeViewSet(ModelViewSet):
     """户型视图集"""
-    queryset = HouseType.objects.all()
-    serializer_class = HouseTypeSerializer
+    queryset = carType.objects.all()
+    serializer_class = carTypeSerializer
     pagination_class = None
 
 
@@ -108,11 +108,11 @@ class TagViewSet(ModelViewSet):
 
 @method_decorator(decorator=cache_page(timeout=300), name='list')
 @method_decorator(decorator=cache_page(timeout=300), name='retrieve')
-class EstateViewSet(ModelViewSet):
+class car_shopViewSet(ModelViewSet):
     """楼盘视图集"""
-    queryset = Estate.objects.all()
+    queryset = car_shop.objects.all()
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filterset_class = EstateFilterSet
+    filterset_class = car_shopFilterSet
     ordering = '-hot'
     ordering_fields = ('district', 'hot', 'name')
 
@@ -127,31 +127,31 @@ class EstateViewSet(ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ('create', 'update'):
-            return EstateCreateSerializer
-        return EstateDetailSerializer if self.action == 'retrieve' \
-            else EstateSimpleSerializer
+            return car_shopCreateSerializer
+        return car_shopDetailSerializer if self.action == 'retrieve' \
+            else car_shopSimpleSerializer
 
 
 @method_decorator(decorator=cache_page(timeout=120), name='list')
 @method_decorator(decorator=cache_page(timeout=300), name='retrieve')
-class HouseInfoViewSet(ModelViewSet):
+class carInfoViewSet(ModelViewSet):
     """房源视图集"""
-    queryset = HouseInfo.objects.all()
-    serializer_class = HouseInfoDetailSerializer
+    queryset = carInfo.objects.all()
+    serializer_class = carInfoDetailSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filterset_class = HouseInfoFilterSet
+    filterset_class = carInfoFilterSet
     ordering = ('-pubdate', )
     ordering_fields = ('pubdate', 'price')
 
     @action(methods=('GET', ), detail=True)
     def photos(self, request, pk):
-        queryset = HousePhoto.objects.filter(house=self.get_object())
-        return Response(HousePhotoSerializer(queryset, many=True).data)
+        queryset = carPhoto.objects.filter(car=self.get_object())
+        return Response(carPhotoSerializer(queryset, many=True).data)
 
     def get_queryset(self):
         if self.action == 'list':
             return self.queryset\
-                .only('houseid', 'title', 'area', 'floor', 'totalfloor', 'price',
+                .only('carid', 'title', 'area', 'floor', 'totalfloor', 'price',
                       'mainphoto', 'priceunit', 'street', 'type',
                       'district_level3__distid', 'district_level3__name')\
                 .select_related('district_level3', 'type')\
@@ -159,13 +159,13 @@ class HouseInfoViewSet(ModelViewSet):
         return self.queryset\
             .defer('user', 'district_level2',
                    'district_level3__parent', 'district_level3__ishot', 'district_level3__intro',
-                   'estate__district', 'estate__hot', 'estate__intro',
+                   'car_shop__district', 'car_shop__hot', 'car_shop__intro',
                    'agent__realstar', 'agent__profstar', 'agent__certificated')\
-            .select_related('district_level3', 'type', 'estate', 'agent')\
+            .select_related('district_level3', 'type', 'car_shop', 'agent')\
             .prefetch_related('tags')
 
     def get_serializer_class(self):
         if self.action in ('create', 'update'):
-            return HouseInfoCreateSerializer
-        return HouseInfoDetailSerializer if self.action == 'retrieve' \
-            else HouseInfoSimpleSerializer
+            return carInfoCreateSerializer
+        return carInfoDetailSerializer if self.action == 'retrieve' \
+            else carInfoSimpleSerializer
