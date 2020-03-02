@@ -1,16 +1,129 @@
-from django.db.models import Prefetch
+import datetime
+import os
+import random
+
+import jwt
+import json
+from django.core.cache import caches
+from django.db.models import Prefetch, Q
+from django.db.transaction import atomic
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
+from django_redis import get_redis_connection
 from rest_framework.decorators import api_view, action
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from api.helpers import car_shopFilterSet, carInfoFilterSet
-from api.serializers import *
-from common.models import District, Agent, carType, Tag
+from api.consts import MAX_PHOTO_SIZE, FILE_UPLOAD_SUCCESS, FILE_SIZE_EXCEEDED, \
+    CODE_TOO_FREQUENCY, MOBILE_CODE_SUCCESS, INVALID_TEL_NUM, USER_LOGIN_SUCCESS, \
+    USER_LOGIN_FAILED, INVALID_LOGIN_INFO
+from api.helpers import CarShopFilterSet, CarInfoFilterSet, DefaultResponse, \
+    LoginRequiredAuthentication, RbacPermission
+from api.serializers import DistrictSimpleSerializer, DistrictDetailSerializer, AgentDetailSerializer, \
+    AgentCreateSerializer, AgentSimpleSerializer, CarTypeSerializer, TagSerializer, CarShopCreateSerializer, \
+    CarShopDetailSerializer, CarShopSimpleSerializer, CarInfoDetailSerializer, CarInfoCreateSerializer, \
+    CarInfoSimpleSerializer, CarPhotoSerializer
+from common.models import *
+from common.utils import gen_mobile_code, send_sms_by_luosimao, to_md5_hex, \
+    get_ip_address, upload_stream_to_qiniu
+from common.validators import check_tel, check_username, check_email
+from tiaotiaoche.settings import SECRET_KEY
+
+
+@api_view(('POST', ))
+def upload_car_photo(request):
+    file_obj = request.FILES.get('mainphoto')
+    if file_obj and len(file_obj) < MAX_PHOTO_SIZE:
+        prefix = to_md5_hex(file_obj.file)
+        filename = f'{prefix}{os.path.splitext(file_obj.name)[1]}'
+        upload_stream_to_qiniu.delay(file_obj, filename, len(file_obj))
+        photo = CarPhoto()
+        photo.path = f'http://q69nr46pe.bkt.clouddn.com/{filename}'
+        photo.ismain = True
+        photo.save()
+        resp = DefaultResponse(*FILE_UPLOAD_SUCCESS, data={
+            'photoid': photo.photoid,
+            'url': photo.path
+        })
+    else:
+        resp = DefaultResponse(*FILE_SIZE_EXCEEDED)
+    return resp
+
+
+@api_view(('GET', ))
+def get_code_by_sms(request, tel):
+    """获取短信验证码"""
+    if check_tel(tel):
+        if caches['default'].get(f'{tel}:block'):
+            resp = DefaultResponse(*CODE_TOO_FREQUENCY)
+        else:
+            code = gen_mobile_code()
+            message = f'您的短信验证码是{code}，打死也不能告诉别人哟！【签名】'
+            send_sms_by_luosimao.apply_async((tel, message),
+                                             countdown=random.random() * 5)
+            caches['default'].set(f'{tel}:block', code, timeout=120)
+            caches['default'].set(f'{tel}:valid', code, timeout=1800)
+            resp = DefaultResponse(*MOBILE_CODE_SUCCESS)
+    else:
+        resp = DefaultResponse(*INVALID_TEL_NUM)
+    return resp
+
+
+@api_view(('POST', ))
+def login(request):
+    """登录（获取用户身份令牌）"""
+    username = request.data.get('username')
+    password = request.data.get('password')
+    if (check_username(username) or check_tel(username) or
+            check_email(username)) and len(password) >= 6:
+        password = to_md5_hex(password)
+        q = Q(username=username, password=password) | \
+            Q(tel=username, password=password) | \
+            Q(email=username, password=password)
+        user = User.objects.filter(q)\
+            .only('username', 'realname').first()
+        if user:
+            # 用户登录成功通过JWT生成用户身份令牌
+            payload = {
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
+                'data': {
+                    'userid': user.userid,
+                }
+            }
+            token = jwt.encode(payload, SECRET_KEY, algorithm='HS256').decode()
+            with atomic():
+                current_time = timezone.now()
+                if not user.lastvisit or \
+                        (current_time - user.lastvisit).days >= 1:
+                    user.point += 2
+                    user.lastvisit = current_time
+                    user.save()
+                loginlog = LoginLog()
+                loginlog.user = user
+                loginlog.logdate = current_time
+                loginlog.ipaddr = get_ip_address(request)
+                loginlog.save()
+            resp = DefaultResponse(*USER_LOGIN_SUCCESS, data={
+                'token': token, 'username': user.username, 'realname': user.realname
+            })
+        else:
+            resp = DefaultResponse(*USER_LOGIN_FAILED)
+    else:
+        resp = DefaultResponse(*INVALID_LOGIN_INFO)
+    return resp
+
+
+@api_view(('DELETE', ))
+def logout(request):
+    """注销（销毁用户身份令牌）"""
+    # 如果使用了JWT这种方式通过令牌进行用户身份认证
+    # 如何彻底让令牌失效??? ---> Redis用集合类型做一个失效令牌清单
+    # 定时任务从失效令牌清单中清理过期令牌避免集合元素过多
+    pass
 
 
 @cache_page(timeout=365 * 86400)
@@ -79,7 +192,7 @@ class AgentViewSet(ModelViewSet):
         else:
             self.queryset = self.queryset.prefetch_related(
                 Prefetch('car_shops',
-                         queryset=car_shop.objects.all().only('name').order_by('-hot'))
+                         queryset=CarShop.objects.all().only('name').order_by('-hot'))
             )
         return self.queryset.order_by('-servstar')
 
@@ -92,10 +205,10 @@ class AgentViewSet(ModelViewSet):
 
 @method_decorator(decorator=cache_page(timeout=86400), name='list')
 @method_decorator(decorator=cache_page(timeout=86400), name='retrieve')
-class carTypeViewSet(ModelViewSet):
+class CarTypeViewSet(ModelViewSet):
     """车型视图集"""
-    queryset = carType.objects.all()
-    serializer_class = carTypeSerializer
+    queryset = CarType.objects.all()
+    serializer_class = CarTypeSerializer
     pagination_class = None
 
 
@@ -108,11 +221,11 @@ class TagViewSet(ModelViewSet):
 
 @method_decorator(decorator=cache_page(timeout=300), name='list')
 @method_decorator(decorator=cache_page(timeout=300), name='retrieve')
-class car_shopViewSet(ModelViewSet):
+class CarShopViewSet(ModelViewSet):
     """店铺视图集"""
-    queryset = car_shop.objects.all()
+    queryset = CarShop.objects.all()
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filterset_class = car_shopFilterSet
+    filterset_class = CarShopFilterSet
     ordering = '-hot'
     ordering_fields = ('district', 'hot', 'name')
 
@@ -127,26 +240,26 @@ class car_shopViewSet(ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ('create', 'update'):
-            return car_shopCreateSerializer
-        return car_shopDetailSerializer if self.action == 'retrieve' \
-            else car_shopSimpleSerializer
+            return CarShopCreateSerializer
+        return CarShopDetailSerializer if self.action == 'retrieve' \
+            else CarShopSimpleSerializer
 
 
 @method_decorator(decorator=cache_page(timeout=120), name='list')
 @method_decorator(decorator=cache_page(timeout=300), name='retrieve')
-class carInfoViewSet(ModelViewSet):
+class CarInfoViewSet(ModelViewSet):
     """车源视图集"""
-    queryset = carInfo.objects.all()
-    serializer_class = carInfoDetailSerializer
+    queryset = CarInfo.objects.all()
+    serializer_class = CarInfoDetailSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filterset_class = carInfoFilterSet
+    filterset_class = CarInfoFilterSet
     ordering = ('-pubdate', )
     ordering_fields = ('pubdate', 'price')
 
     @action(methods=('GET', ), detail=True)
     def photos(self, request, pk):
-        queryset = carPhoto.objects.filter(car=self.get_object())
-        return Response(carPhotoSerializer(queryset, many=True).data)
+        queryset = CarPhoto.objects.filter(car=self.get_object())
+        return Response(CarPhotoSerializer(queryset, many=True).data)
 
     def get_queryset(self):
         if self.action == 'list':
@@ -166,6 +279,6 @@ class carInfoViewSet(ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ('create', 'update'):
-            return carInfoCreateSerializer
-        return carInfoDetailSerializer if self.action == 'retrieve' \
-            else carInfoSimpleSerializer
+            return CarInfoCreateSerializer
+        return CarInfoDetailSerializer if self.action == 'retrieve' \
+            else CarInfoSimpleSerializer

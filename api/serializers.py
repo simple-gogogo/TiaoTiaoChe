@@ -1,9 +1,15 @@
 import json
 
+from django.core.cache import caches
+from django.db.models import Q
+from django.db.transaction import atomic
 from django_redis import get_redis_connection
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
-from common.models import District, Agent, car_shop, carType, Tag, carInfo, carPhoto
+from common.models import *
+from common.utils import to_md5_hex
+from common.validators import USERNAME_PATTERN, TEL_PATTERN, EMAIL_PATTERN
 
 
 class DistrictSimpleSerializer(serializers.ModelSerializer):
@@ -58,30 +64,30 @@ class AgentDetailSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_car_shops(agent):
         queryset = agent.car_shops.all()[:5]
-        return car_shopSimpleSerializer(queryset, many=True).data
+        return CarShopSimpleSerializer(queryset, many=True).data
 
     class Meta:
         model = Agent
         fields = '__all__'
 
 
-class car_shopSimpleSerializer(serializers.ModelSerializer):
+class CarShopSimpleSerializer(serializers.ModelSerializer):
     """店铺简单序列化器"""
 
     class Meta:
-        model = car_shop
+        model = CarShop
         fields = ('car_shopid', 'name')
 
 
-class car_shopCreateSerializer(serializers.ModelSerializer):
+class CarShopCreateSerializer(serializers.ModelSerializer):
     """创建店铺序列化器"""
 
     class Meta:
-        model = car_shop
+        model = CarShop
         fields = '__all__'
 
 
-class car_shopDetailSerializer(serializers.ModelSerializer):
+class CarShopDetailSerializer(serializers.ModelSerializer):
     """店铺详情序列化器"""
     district = serializers.SerializerMethodField()
 
@@ -90,15 +96,15 @@ class car_shopDetailSerializer(serializers.ModelSerializer):
         return DistrictSimpleSerializer(car_shop.district).data
 
     class Meta:
-        model = car_shop
+        model = CarShop
         fields = '__all__'
 
 
-class carTypeSerializer(serializers.ModelSerializer):
+class CarTypeSerializer(serializers.ModelSerializer):
     """车型序列化器"""
 
     class Meta:
-        model = carType
+        model = CarType
         fields = '__all__'
 
 
@@ -110,7 +116,7 @@ class TagSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class carInfoSimpleSerializer(serializers.ModelSerializer):
+class CarInfoSimpleSerializer(serializers.ModelSerializer):
     """车源基本信息序列化器"""
     mainphoto = serializers.SerializerMethodField()
     district = serializers.SerializerMethodField()
@@ -127,27 +133,27 @@ class carInfoSimpleSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_type(carinfo):
-        return carTypeSerializer(carinfo.type).data
+        return CarTypeSerializer(carinfo.type).data
 
     @staticmethod
     def get_tags(carinfo):
         return TagSerializer(carinfo.tags, many=True).data
 
     class Meta:
-        model = carInfo
+        model = CarInfo
         fields = ('carid', 'title', 'area', 'floor', 'totalfloor', 'price', 'priceunit',
                   'mainphoto', 'street', 'district', 'type', 'tags')
 
 
-class carInfoCreateSerializer(serializers.ModelSerializer):
+class CarInfoCreateSerializer(serializers.ModelSerializer):
     """创建车源序列化器"""
 
     class Meta:
-        model = carInfo
+        model = CarInfo
         fields = '__all__'
 
 
-class carInfoDetailSerializer(serializers.ModelSerializer):
+class CarInfoDetailSerializer(serializers.ModelSerializer):
     """车源详情序列化器"""
     district = serializers.SerializerMethodField()
     type = serializers.SerializerMethodField()
@@ -162,7 +168,7 @@ class carInfoDetailSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_type(carinfo):
-        return carTypeSerializer(carinfo.type).data
+        return CarTypeSerializer(carinfo.type).data
 
     @staticmethod
     def get_tags(carinfo):
@@ -170,7 +176,7 @@ class carInfoDetailSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_car_shop(carinfo):
-        return car_shopSimpleSerializer(carinfo.car_shop).data
+        return CarShopSimpleSerializer(carinfo.car_shop).data
 
     @staticmethod
     def get_agent(carinfo):
@@ -178,17 +184,76 @@ class carInfoDetailSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_photos(carinfo):
-        queryset = carPhoto.objects.filter(car=carinfo)
-        return carPhotoSerializer(queryset, many=True).data
+        queryset = CarPhoto.objects.filter(car=carinfo)
+        return CarPhotoSerializer(queryset, many=True).data
 
     class Meta:
-        model = carInfo
+        model = CarInfo
         exclude = ('district_level2', 'district_level3', 'user')
 
 
-class carPhotoSerializer(serializers.ModelSerializer):
+class CarPhotoSerializer(serializers.ModelSerializer):
     """车源照片序列化器"""
 
     class Meta:
-        model = carPhoto
+        model = CarPhoto
         fields = ('photoid', 'path')
+
+
+class UserSimpleSerializer(serializers.ModelSerializer):
+    """用户简单序列化器"""
+
+    class Meta:
+        model = User
+        exclude = ('password', 'roles')
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """更新用户序列化器"""
+
+    class Meta:
+        model = User
+        fields = ('realname', 'tel', 'email', 'sex')
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    """创建用户序列化器"""
+    username = serializers.RegexField(regex=USERNAME_PATTERN)
+    password = serializers.CharField(min_length=6)
+    realname = serializers.RegexField(regex=r'[\u4e00-\u9fa5]{2,20}')
+    tel = serializers.RegexField(regex=TEL_PATTERN)
+    email = serializers.RegexField(regex=EMAIL_PATTERN)
+    code = serializers.CharField(write_only=True, min_length=6, max_length=6)
+
+    def validate(self, attrs):
+        code_from_user = attrs['code']
+        code_from_redis = caches['default'].get(f'{attrs["tel"]}:valid')
+        if code_from_redis != code_from_user:
+            raise ValidationError('请输入有效的手机验证码', 'invalid')
+        user = User.objects.filter(Q(username=attrs['username']) |
+                                   Q(tel=attrs['tel']) |
+                                   Q(email=attrs['email']))
+        if user:
+            raise ValidationError('用户名、手机或邮箱已被注册', 'invalid')
+        return attrs
+
+    def create(self, validated_data):
+        del validated_data['code']
+        caches['default'].delete(f'{validated_data["tel"]}:valid')
+        validated_data['password'] = to_md5_hex(validated_data['password'])
+        with atomic():
+            user = User.objects.create(**validated_data)
+            role = Role.objects.get(roleid=1)
+            UserRole.objects.create(user=user, role=role)
+        return user
+
+    class Meta:
+        model = User
+        exclude = ('userid', 'regdate', 'point', 'lastvisit', 'roles')
+
+
+class RoleSimpleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Role
+        fields = ('roleid', )

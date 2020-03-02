@@ -86,7 +86,7 @@ window.onload = function () { // wait for load in a dumb way because B-0
       var customizerUrl = origin + window.location.pathname + '?id=' + result.id
       showSuccess('<strong>Success!</strong> Your configuration has been saved to <a href="' + gistUrl + '">' + gistUrl + '</a> ' +
         'and can be revisited here at <a href="' + customizerUrl + '">' + customizerUrl + '</a> for further customization.')
-      history.replaceState(false, document.title, customizerUrl)
+      history.replacCarShop(false, document.title, customizerUrl)
       callback(gistUrl, customizerUrl)
     })
     .error(function (err) {

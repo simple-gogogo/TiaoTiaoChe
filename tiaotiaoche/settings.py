@@ -27,7 +27,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'edrnuun9k1^2j0extzeb-%mgh6zizvhdqr)zskz0xvgz2l8b&b'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
 
@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.sitemaps',
     'accounts',
-    'compressor',
+    # 'compressor',
     'servermanager',
     'djcelery'
 ]
@@ -223,11 +223,12 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), ]
-
+# STATICFILES = os.path.join(BASE_DIR, 'static')
+#
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # MEDIA_URL = '/media/'
 
-# FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 # # 日志配置（日志级别越低内容越详细）
 # LOGGING = {
@@ -337,9 +338,9 @@ EMAIL_HOST = 'smtp.qq.com'  # 如果是 163 改成 smtp.163.com
 
 EMAIL_PORT = 465
 
-EMAIL_HOST_USER = EMAIL_SENDER  # 帐号
+EMAIL_HOST_USER = ''  # 帐号
 
-EMAIL_HOST_PASSWORD = EMAIL_PWD  # 授权码（****）
+EMAIL_HOST_PASSWORD = ''  # 授权码（****）
 # 默认邮件
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
