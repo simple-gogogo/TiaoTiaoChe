@@ -66,7 +66,7 @@ class AgentDetailSerializer(serializers.ModelSerializer):
 
 
 class car_shopSimpleSerializer(serializers.ModelSerializer):
-    """楼盘简单序列化器"""
+    """店铺简单序列化器"""
 
     class Meta:
         model = car_shop
@@ -74,7 +74,7 @@ class car_shopSimpleSerializer(serializers.ModelSerializer):
 
 
 class car_shopCreateSerializer(serializers.ModelSerializer):
-    """创建楼盘序列化器"""
+    """创建店铺序列化器"""
 
     class Meta:
         model = car_shop
@@ -82,7 +82,7 @@ class car_shopCreateSerializer(serializers.ModelSerializer):
 
 
 class car_shopDetailSerializer(serializers.ModelSerializer):
-    """楼盘详情序列化器"""
+    """店铺详情序列化器"""
     district = serializers.SerializerMethodField()
 
     @staticmethod
@@ -95,7 +95,7 @@ class car_shopDetailSerializer(serializers.ModelSerializer):
 
 
 class carTypeSerializer(serializers.ModelSerializer):
-    """户型序列化器"""
+    """车型序列化器"""
 
     class Meta:
         model = carType
@@ -103,7 +103,7 @@ class carTypeSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """房源标签序列化器"""
+    """车源标签序列化器"""
 
     class Meta:
         model = Tag
@@ -111,7 +111,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class carInfoSimpleSerializer(serializers.ModelSerializer):
-    """房源基本信息序列化器"""
+    """车源基本信息序列化器"""
     mainphoto = serializers.SerializerMethodField()
     district = serializers.SerializerMethodField()
     type = serializers.SerializerMethodField()
@@ -140,7 +140,7 @@ class carInfoSimpleSerializer(serializers.ModelSerializer):
 
 
 class carInfoCreateSerializer(serializers.ModelSerializer):
-    """创建房源序列化器"""
+    """创建车源序列化器"""
 
     class Meta:
         model = carInfo
@@ -148,7 +148,7 @@ class carInfoCreateSerializer(serializers.ModelSerializer):
 
 
 class carInfoDetailSerializer(serializers.ModelSerializer):
-    """房源详情序列化器"""
+    """车源详情序列化器"""
     district = serializers.SerializerMethodField()
     type = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
@@ -187,7 +187,7 @@ class carInfoDetailSerializer(serializers.ModelSerializer):
 
 
 class carPhotoSerializer(serializers.ModelSerializer):
-    """房源照片序列化器"""
+    """车源照片序列化器"""
 
     class Meta:
         model = carPhoto

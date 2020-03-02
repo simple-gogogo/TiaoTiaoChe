@@ -19,7 +19,7 @@ class AgentCursorPagination(CursorPagination):
 
 
 class car_shopFilterSet(filterset.FilterSet):
-    """自定义楼盘筛选器"""
+    """自定义店铺筛选器"""
     name = filterset.CharFilter(lookup_expr='startswith')
     minhot = filterset.NumberFilter(field_name='hot', lookup_expr='gte')
     maxhot = filterset.NumberFilter(field_name='hot', lookup_expr='lte')
@@ -31,7 +31,7 @@ class car_shopFilterSet(filterset.FilterSet):
 
 
 class carInfoFilterSet(filterset.FilterSet):
-    """自定义房源筛选器"""
+    """自定义车源筛选器"""
     title = filterset.CharFilter(lookup_expr='contains')
     minprice = filterset.NumberFilter(field_name='price', lookup_expr='gte')
     maxprice = filterset.NumberFilter(field_name='price', lookup_expr='lte')

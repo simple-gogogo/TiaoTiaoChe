@@ -93,7 +93,7 @@ class AgentViewSet(ModelViewSet):
 @method_decorator(decorator=cache_page(timeout=86400), name='list')
 @method_decorator(decorator=cache_page(timeout=86400), name='retrieve')
 class carTypeViewSet(ModelViewSet):
-    """户型视图集"""
+    """车型视图集"""
     queryset = carType.objects.all()
     serializer_class = carTypeSerializer
     pagination_class = None
@@ -101,7 +101,7 @@ class carTypeViewSet(ModelViewSet):
 
 @method_decorator(decorator=cache_page(timeout=3600), name='list')
 class TagViewSet(ModelViewSet):
-    """房源标签视图集"""
+    """车源标签视图集"""
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
@@ -109,7 +109,7 @@ class TagViewSet(ModelViewSet):
 @method_decorator(decorator=cache_page(timeout=300), name='list')
 @method_decorator(decorator=cache_page(timeout=300), name='retrieve')
 class car_shopViewSet(ModelViewSet):
-    """楼盘视图集"""
+    """店铺视图集"""
     queryset = car_shop.objects.all()
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filterset_class = car_shopFilterSet
@@ -135,7 +135,7 @@ class car_shopViewSet(ModelViewSet):
 @method_decorator(decorator=cache_page(timeout=120), name='list')
 @method_decorator(decorator=cache_page(timeout=300), name='retrieve')
 class carInfoViewSet(ModelViewSet):
-    """房源视图集"""
+    """车源视图集"""
     queryset = carInfo.objects.all()
     serializer_class = carInfoDetailSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
